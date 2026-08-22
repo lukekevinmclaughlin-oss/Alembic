@@ -1,15 +1,16 @@
 import SwiftUI
 import AlembicEngine
+import StoreKit
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
     @EnvironmentObject private var purchase: PurchaseManager
+    @Environment(\.requestReview) private var requestReview
+    @State private var showPaywall = false
 
     var body: some View {
         Group {
-            if !purchase.hasAccess {
-                PaywallView()
-            } else if model.hasProject {
+            if model.hasProject {
                 workspace
             } else {
                 WelcomeView()
@@ -24,6 +25,14 @@ struct ContentView: View {
         }
         .sheet(item: sqliteBinding) { pending in
             SQLiteTablePickerSheet(pending: pending)
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchase)
+        }
+        .onChange(of: model.completedRunCount) { _, _ in
+            guard ReviewPromptPolicy.recordSuccessfulRun() else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { requestReview() }
         }
     }
 
@@ -128,7 +137,7 @@ struct ContentView: View {
                             .accessibilityLabel("Cancel pipeline run")
                         } else {
                             Button {
-                                model.runFull()
+                                runPipeline()
                             } label: {
                                 Label("Run", systemImage: "play.fill")
                             }
@@ -193,7 +202,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
             } else {
                 Button {
-                    model.runFull()
+                    runPipeline()
                 } label: {
                     Label("Run Full Pipeline", systemImage: "play.fill")
                         .frame(maxWidth: .infinity)
@@ -216,6 +225,14 @@ struct ContentView: View {
         }
         .padding(12)
         .background(.ultraThinMaterial)
+    }
+
+    private func runPipeline() {
+        if model.hasAugmentOps && !purchase.hasAccess {
+            showPaywall = true
+        } else {
+            model.runFull()
+        }
     }
 
     @ViewBuilder

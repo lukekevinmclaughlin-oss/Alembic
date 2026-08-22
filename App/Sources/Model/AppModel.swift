@@ -154,6 +154,7 @@ final class AppModel {
     var fullResult: ExecutionResult?
     var fullError: String?
     var card: DatasetCard?
+    var completedRunCount = 0
     private var runTask: Task<Void, Never>?
 
     // Preferences
@@ -493,13 +494,16 @@ final class AppModel {
                 }
             }
             let finalDataset = current
+            let finalMetrics = metrics
+            let finalBrokenStep = broken
+            let finalErrorMessage = errorMessage
             guard !Task.isCancelled, let self, self.previewGeneration == gen else { return }
             await MainActor.run {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                     self.processedSample = finalDataset
-                    self.stepMetrics = metrics
-                    self.brokenStepID = broken
-                    self.previewError = errorMessage
+                    self.stepMetrics = finalMetrics
+                    self.brokenStepID = finalBrokenStep
+                    self.previewError = finalErrorMessage
                     self.diff = DatasetDiff.diff(before: sample, after: finalDataset)
                 }
             }
@@ -550,6 +554,7 @@ final class AppModel {
                     self.isRunningFull = false
                     self.fullProgress = ""
                     self.screen = .report
+                    self.completedRunCount += 1
                 }
             } catch {
                 await MainActor.run {

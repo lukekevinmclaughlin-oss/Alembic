@@ -5,8 +5,10 @@ import UniformTypeIdentifiers
 /// The dataset card: token histograms, column stats, language mix, provenance.
 struct ReportView: View {
     @Environment(AppModel.self) private var model
+    @EnvironmentObject private var purchase: PurchaseManager
     @State private var showCardExporter = false
     @State private var barsGrown = false
+    @State private var showPaywall = false
 
     var body: some View {
         ScrollView {
@@ -37,7 +39,11 @@ struct ReportView: View {
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                             Button {
-                                model.runFull()
+                                if model.hasAugmentOps && !purchase.hasAccess {
+                                    showPaywall = true
+                                } else {
+                                    model.runFull()
+                                }
                             } label: {
                                 Label("Run Full Pipeline", systemImage: "play.fill")
                             }
@@ -65,6 +71,9 @@ struct ReportView: View {
                       document: RecipeDocument(data: Data((model.card?.markdown() ?? "").utf8)),
                       contentType: .plainText,
                       defaultFilename: "dataset-card") { _ in }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView().environmentObject(purchase)
+        }
     }
 
     @ViewBuilder

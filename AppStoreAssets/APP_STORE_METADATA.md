@@ -37,13 +37,21 @@ FOR DATA AND AI PROFESSIONALS
 Alembic is built for ML engineers, data scientists, developers, researchers, consultants, analysts, and teams preparing corpora for training, evaluation, search, and retrieval.
 
 FREE AND PRO
-Alembic is free to download and use: importing data, the full deterministic pipeline (tokenize, dedupe, PII redaction, decontamination, chunking), preview, and export are free forever, and your data is never deleted. Alembic Pro is an optional auto-renewable subscription (7-day free trial; annual plan recommended, monthly available) that unlocks the advanced layer: dataset reports and cards after your first free report, LLM augmentation experiments, advanced quality trends, unlimited run history, and visual before/after comparisons. The current price is always shown before purchase, and you can manage or cancel at any time in Apple Account settings.
+Alembic is free to download and use: importing data, the full deterministic pipeline (tokenize, dedupe, PII redaction, decontamination, chunking), preview, dataset reports, and export are free forever. Alembic Pro is an optional auto-renewable subscription with monthly and annual choices and an eligible 7-day free trial. Pro unlocks LLM-assisted enrichment: Q&A generation, quality scoring, rewriting, classification, and preference-pair creation. The current localized price and trial eligibility are always supplied by the App Store before purchase. Restore Purchases and Manage Subscription are available in Settings.
 
 Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://github.com/lukekevinmclaughlin-oss/Alembic/blob/main/PRIVACY.md
 
 ## What's New
 
+Alembic 1.1 introduces a genuinely useful free workflow and a clearer, more reliable Alembic Pro experience.
+
+- Use the complete deterministic data pipeline, reports, and exports without subscribing.
+- Choose monthly or annual Alembic Pro from a transparent StoreKit paywall.
+- See accurate App Store pricing and trial eligibility before purchasing.
+- Restore purchases and manage subscriptions directly from Settings.
+- Improved verified-entitlement, expiration, cancellation, and transaction-update handling.
+- Review prompts now appear only after successful pipeline milestones, with long cooldowns.
 
 
 ---
@@ -87,11 +95,18 @@ FOR DATA AND AI PROFESSIONALS
 Alembic is built for ML engineers, data scientists, developers, researchers, consultants, analysts, and teams preparing corpora for training, evaluation, search, and retrieval.
 
 FREE AND PRO
-Alembic is free to download and use: importing data, the full deterministic pipeline (tokenize, dedupe, PII redaction, decontamination, chunking), preview, and export are free forever, and your data is never deleted. Alembic Pro is an optional auto-renewable subscription (7-day free trial; annual plan recommended, monthly available) that unlocks the advanced layer: dataset reports and cards after your first free report, LLM augmentation experiments, advanced quality trends, unlimited run history, and visual before/after comparisons. The current price is always shown before purchase, and you can manage or cancel at any time in Apple Account settings.
+Alembic is free to download and use: importing data, the full deterministic pipeline (tokenize, dedupe, PII redaction, decontamination, chunking), preview, dataset reports, and export are free forever. Alembic Pro is an optional auto-renewable subscription with monthly and annual choices and an eligible 7-day free trial. Pro unlocks LLM-assisted enrichment: Q&A generation, quality scoring, rewriting, classification, and preference-pair creation. The current localized price and trial eligibility are always supplied by the App Store before purchase. Restore Purchases and Manage Subscription are available in Settings.
 
 Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://github.com/lukekevinmclaughlin-oss/Alembic/blob/main/PRIVACY.md
 
 ## What's New
 
+Alembic 1.1 introduces a genuinely useful free workflow and a clearer, more reliable Alembic Pro experience.
 
+- Use the complete deterministic data pipeline, reports, and exports without subscribing.
+- Choose monthly or annual Alembic Pro from a transparent StoreKit paywall.
+- See accurate App Store pricing and trial eligibility before purchasing.
+- Restore purchases and manage subscriptions directly from Settings.
+- Improved verified-entitlement, expiration, cancellation, and transaction-update handling.
+- Review prompts now appear only after successful pipeline milestones, with long cooldowns.

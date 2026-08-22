@@ -1,0 +1,74 @@
+{
+  "identifier" : "F420B7F1-6E27-43CC-A2DB-4A5D449EA463",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "3D8BCC8B-D767-4787-A790-54EFBF8A095D",
+      "localizations" : [
+        {
+          "description" : "LLM-assisted enrichment and advanced Alembic workflows.",
+          "displayName" : "Alembic Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Alembic Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "712D2C2A-3CD3-4E8F-9B22-61378EFB2A66",
+          "introductoryOffer" : {
+            "internalID" : "926C48E5-13F7-447A-9020-1F4DAA77386E",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Alembic Pro, billed monthly after a seven-day free trial.",
+              "displayName" : "Alembic Pro Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.lukemclaughlin.alembic.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Alembic Pro Monthly"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "29.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "DBD8DBE6-AB17-4DEB-89C3-F814E57275DF",
+          "introductoryOffer" : {
+            "internalID" : "9A27C6C1-D3A0-4A7D-9615-A53E91B2CDA9",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Alembic Pro, billed annually after a seven-day free trial.",
+              "displayName" : "Alembic Pro Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.lukemclaughlin.alembic.pro.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Alembic Pro Annual"
+        }
+      ]
+    }
+  ],
+  "version" : { "major" : 4, "minor" : 0 }
+}

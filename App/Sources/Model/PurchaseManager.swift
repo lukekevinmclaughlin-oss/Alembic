@@ -5,20 +5,18 @@ import StoreKit
 final class PurchaseManager: ObservableObject {
     static let shared = PurchaseManager()
 
-    // These must match the product IDs configured in App Store Connect exactly. They
-    // previously read "com.lukemclaughlin.alembic.monthly", which does not exist, so
-    // Product.products(for:) always came back empty: the paywall fell through to a
-    // hardcoded price and a hardcoded "one week free" claim that belonged to no real
-    // product, and every purchase failed. That mismatch is what Guideline 3.1.2(c) /
-    // 5.6 flagged as marketing a "trial" that isn't what the user actually buys.
     static let monthlyID = "com.lukemclaughlin.alembic.pro.monthly"
     static let annualID = "com.lukemclaughlin.alembic.pro.annual"
-    static var productIDs: [String] { [monthlyID, annualID] }
+    static let productIDs = [monthlyID, annualID]
 
     @Published private(set) var hasAccess = false
-    @Published private(set) var product: Product?
-    @Published private(set) var annualProduct: Product?
+    @Published private(set) var products: [Product] = []
+    @Published private(set) var introEligibleIDs: Set<String> = []
+    @Published private(set) var entitlementExpirationDate: Date?
+    @Published private(set) var isLoading = true
+    @Published var selectedProductID = annualID
     @Published var lastError: String?
+
     private var updatesTask: Task<Void, Never>?
 
     private init() {
@@ -32,126 +30,131 @@ final class PurchaseManager: ObservableObject {
         Task { await refresh() }
     }
 
-    /// Nil until StoreKit answers. The paywall must not invent a price.
-    var price: String? { product?.displayPrice }
+    deinit { updatesTask?.cancel() }
 
-    /// The monthly product's introductory offer, if the user is eligible for one.
-    private var introOffer: Product.SubscriptionOffer? {
-        guard let sub = product?.subscription, isEligibleForIntro else { return nil }
-        return sub.introductoryOffer
-    }
+    var monthlyProduct: Product? { product(id: Self.monthlyID) }
+    var annualProduct: Product? { product(id: Self.annualID) }
+    var selectedProduct: Product? { product(id: selectedProductID) }
 
-    @Published private(set) var isEligibleForIntro = false
-
-    /// True only when the introductory offer is genuinely free. A discounted — but
-    /// still paid — introductory price must never be described as a "trial".
-    var hasFreeTrial: Bool { introOffer?.paymentMode == .freeTrial }
-
-    /// Human wording for the offer, derived from StoreKit rather than hardcoded.
-    var offerSummary: String? {
-        guard let price else { return nil }
-        guard let offer = introOffer else { return "\(price) per month" }
-        let period = Self.describe(offer.period)
-        switch offer.paymentMode {
-        case .freeTrial:
-            return "\(period) free, then \(price) per month"
-        case .payAsYouGo:
-            return "\(offer.displayPrice) per month for \(period), then \(price) per month"
-        case .payUpFront:
-            return "\(offer.displayPrice) for \(period), then \(price) per month"
-        default:
-            return "\(price) per month"
-        }
-    }
-
-    /// Label for the purchase button — only says "free trial" when it really is one.
-    var purchaseButtonTitle: String {
-        hasFreeTrial ? "Start Free Trial" : "Subscribe"
-    }
-
-    /// Guideline 3.1.2(c) terms block. Describes the introductory offer honestly:
-    /// a discounted-but-paid intro price is never called a trial.
-    var termsSummary: String {
-        let renewal = "It renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel anytime in your Apple Account settings."
-        guard let price else {
-            return "Alembic Pro is an auto-renewing monthly subscription. \(renewal)"
-        }
-        guard let offer = introOffer else {
-            return "Alembic Pro is an auto-renewing monthly subscription of \(price). \(renewal)"
-        }
-        let period = Self.describe(offer.period).lowercased()
-        switch offer.paymentMode {
-        case .freeTrial:
-            return "Alembic Pro is an auto-renewing monthly subscription of \(price), starting after a \(period) free trial. \(renewal)"
-        case .payAsYouGo:
-            return "Alembic Pro is an auto-renewing monthly subscription. It starts at an introductory price of \(offer.displayPrice) per month for \(period), then continues at \(price) per month. This introductory period is discounted, not free. \(renewal)"
-        case .payUpFront:
-            return "Alembic Pro is an auto-renewing monthly subscription. It starts with an introductory payment of \(offer.displayPrice) for \(period), then continues at \(price) per month. This introductory period is discounted, not free. \(renewal)"
-        default:
-            return "Alembic Pro is an auto-renewing monthly subscription of \(price). \(renewal)"
-        }
-    }
-
-    private static func describe(_ period: Product.SubscriptionPeriod) -> String {
-        let n = period.value
-        let unit: String
-        switch period.unit {
-        case .day:   unit = n == 1 ? "day" : "days"
-        case .week:  unit = n == 1 ? "week" : "weeks"
-        case .month: unit = n == 1 ? "month" : "months"
-        case .year:  unit = n == 1 ? "year" : "years"
-        @unknown default: unit = "period"
-        }
-        return n == 1 ? "One \(unit)" : "\(n) \(unit)"
+    func product(id: String) -> Product? {
+        products.first { $0.id == id }
     }
 
     func refresh() async {
+        isLoading = true
+        lastError = nil
         do {
-            let products = try await Product.products(for: Self.productIDs)
-            product = products.first { $0.id == Self.monthlyID }
-            annualProduct = products.first { $0.id == Self.annualID }
+            products = try await Product.products(for: Self.productIDs)
+                .sorted { lhs, rhs in
+                    if lhs.id == Self.annualID { return true }
+                    if rhs.id == Self.annualID { return false }
+                    return lhs.price < rhs.price
+                }
+            var eligible = Set<String>()
+            for product in products {
+                if let subscription = product.subscription,
+                   await subscription.isEligibleForIntroOffer,
+                   subscription.introductoryOffer?.paymentMode == .freeTrial {
+                    eligible.insert(product.id)
+                }
+            }
+            introEligibleIDs = eligible
+            if product(id: selectedProductID) == nil, let first = products.first {
+                selectedProductID = first.id
+            }
+            if products.count != Self.productIDs.count {
+                lastError = "Some subscription options are temporarily unavailable. Please try again shortly."
+            }
         } catch {
-            product = nil
-            annualProduct = nil
-        }
-        if let sub = product?.subscription {
-            isEligibleForIntro = await sub.isEligibleForIntroOffer
-        } else {
-            isEligibleForIntro = false
+            products = []
+            introEligibleIDs = []
+            lastError = "Subscriptions could not be loaded. Check your connection and try again."
         }
         await updateEntitlement()
+        isLoading = false
     }
 
-    func purchase() async {
-        guard let product else {
-            lastError = "The subscription is temporarily unavailable. Please try again."
+    func hasFreeTrial(_ product: Product) -> Bool {
+        introEligibleIDs.contains(product.id)
+            && product.subscription?.introductoryOffer?.paymentMode == .freeTrial
+    }
+
+    func offerSummary(for product: Product) -> String {
+        let cadence = product.id == Self.annualID ? "year" : "month"
+        guard hasFreeTrial(product),
+              let offer = product.subscription?.introductoryOffer else {
+            return "\(product.displayPrice) per \(cadence)"
+        }
+        return "\(Self.describe(offer.period)) free, then \(product.displayPrice) per \(cadence)"
+    }
+
+    func termsSummary(for product: Product) -> String {
+        let cadence = product.id == Self.annualID ? "annual" : "monthly"
+        let period = product.id == Self.annualID ? "year" : "month"
+        let renewal = "Renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel anytime in Apple Account settings."
+        if hasFreeTrial(product), let offer = product.subscription?.introductoryOffer {
+            return "Alembic Pro is an auto-renewing \(cadence) subscription of \(product.displayPrice) per \(period), beginning after a \(Self.describe(offer.period).lowercased()) free trial. \(renewal)"
+        }
+        return "Alembic Pro is an auto-renewing \(cadence) subscription of \(product.displayPrice) per \(period). \(renewal)"
+    }
+
+    var purchaseButtonTitle: String {
+        guard let selectedProduct else { return "Subscribe" }
+        return hasFreeTrial(selectedProduct) ? "Start Free Trial" : "Subscribe"
+    }
+
+    func purchaseSelected() async {
+        guard let product = selectedProduct else {
+            lastError = "The selected subscription is temporarily unavailable. Please try again."
             return
         }
+        lastError = nil
         do {
             switch try await product.purchase() {
             case .success(let result):
                 let transaction = try checkVerified(result)
                 await transaction.finish()
                 await updateEntitlement()
-            case .pending: lastError = "Your purchase is pending approval."
-            case .userCancelled: break
-            @unknown default: break
+            case .pending:
+                lastError = "Your purchase is pending approval. Premium will unlock automatically after approval."
+            case .userCancelled:
+                break
+            @unknown default:
+                break
             }
-        } catch { lastError = error.localizedDescription }
+        } catch StoreError.failedVerification {
+            lastError = "The App Store receipt could not be verified. You were not granted Premium access."
+        } catch {
+            lastError = error.localizedDescription
+        }
     }
 
     func restore() async {
-        do { try await AppStore.sync(); await updateEntitlement() }
-        catch { lastError = error.localizedDescription }
+        lastError = nil
+        do {
+            try await AppStore.sync()
+            await updateEntitlement()
+            if !hasAccess {
+                lastError = "No active Alembic Pro subscription was found for this Apple Account."
+            }
+        } catch {
+            lastError = error.localizedDescription
+        }
     }
 
     private func updateEntitlement() async {
         var active = false
+        var latestExpiration: Date?
         for await result in Transaction.currentEntitlements {
-            if case .verified(let transaction) = result,
-               Self.productIDs.contains(transaction.productID),
-               transaction.revocationDate == nil,
-               (transaction.expirationDate ?? .distantFuture) > Date() { active = true }
+            guard case .verified(let transaction) = result,
+                  Self.productIDs.contains(transaction.productID),
+                  transaction.revocationDate == nil else { continue }
+            let expiration = transaction.expirationDate ?? .distantFuture
+            guard expiration > Date() else { continue }
+            active = true
+            if latestExpiration == nil || expiration > latestExpiration! {
+                latestExpiration = transaction.expirationDate
+            }
         }
         #if DEBUG
         active = active || ProcessInfo.processInfo.environment["ALEMBIC_DEMO"] == "1"
@@ -160,12 +163,15 @@ final class PurchaseManager: ObservableObject {
         active = true
         #endif
         hasAccess = active
+        entitlementExpirationDate = latestExpiration
     }
 
     private func listenForTransactions() -> Task<Void, Never> {
         Task { [weak self] in
             for await result in Transaction.updates {
-                if case .verified(let transaction) = result { await transaction.finish() }
+                if case .verified(let transaction) = result {
+                    await transaction.finish()
+                }
                 await self?.updateEntitlement()
             }
         }
@@ -176,6 +182,19 @@ final class PurchaseManager: ObservableObject {
         case .verified(let value): return value
         case .unverified: throw StoreError.failedVerification
         }
+    }
+
+    private static func describe(_ period: Product.SubscriptionPeriod) -> String {
+        let value = period.value
+        let unit: String
+        switch period.unit {
+        case .day: unit = value == 1 ? "day" : "days"
+        case .week: unit = value == 1 ? "week" : "weeks"
+        case .month: unit = value == 1 ? "month" : "months"
+        case .year: unit = value == 1 ? "year" : "years"
+        @unknown default: unit = "period"
+        }
+        return value == 1 ? "One \(unit)" : "\(value) \(unit)"
     }
 
     enum StoreError: Error { case failedVerification }

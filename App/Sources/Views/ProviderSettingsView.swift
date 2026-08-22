@@ -1,17 +1,49 @@
 import SwiftUI
 import AlembicEngine
+import StoreKit
 
 /// BYO-key provider settings. Any provider, user's own key, stored in Keychain.
 /// The deterministic pipeline never needs any of this.
 struct ProviderSettingsView: View {
     @Environment(AppModel.self) private var model
+    @EnvironmentObject private var purchase: PurchaseManager
     @State private var testResult: String?
     @State private var testing = false
+    @State private var showPaywall = false
+    @State private var showManageSubscriptions = false
 
     var body: some View {
         @Bindable var model = model
         return ScrollView {
             VStack(spacing: 16) {
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        CardHeader(icon: purchase.hasAccess ? "checkmark.seal.fill" : "sparkles",
+                                   title: purchase.hasAccess ? "Alembic Pro active" : "Alembic Free",
+                                   subtitle: purchase.hasAccess ? "LLM-assisted enrichment is unlocked on this Apple Account." : "The deterministic pipeline is free. Upgrade only when you want LLM-assisted enrichment.")
+                        HStack {
+                            if !purchase.hasAccess {
+                                Button("Try Premium") { showPaywall = true }
+                                    .buttonStyle(DistillButtonStyle())
+                            }
+                            Button("Restore Purchases") { Task { await purchase.restore() } }
+                                .buttonStyle(DistillButtonStyle(prominent: false))
+                            #if os(iOS)
+                            Button("Manage Subscription") { showManageSubscriptions = true }
+                                .buttonStyle(DistillButtonStyle(prominent: false))
+                            #else
+                            Link("Manage Subscription", destination: URL(string: "https://apps.apple.com/account/subscriptions")!)
+                                .buttonStyle(DistillButtonStyle(prominent: false))
+                            #endif
+                        }
+                        if let expiration = purchase.entitlementExpirationDate, purchase.hasAccess {
+                            Text("Current entitlement through \(expiration.formatted(date: .abbreviated, time: .omitted)). Renewal and cancellation are managed by Apple.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
                 GlassCard {
                     VStack(alignment: .leading, spacing: 12) {
                         CardHeader(icon: "brain", title: "LLM provider (optional)",
@@ -134,6 +166,12 @@ struct ProviderSettingsView: View {
             .frame(maxWidth: .infinity)
         }
         .navigationTitle("Settings")
+        .sheet(isPresented: $showPaywall) {
+            PaywallView().environmentObject(purchase)
+        }
+        #if os(iOS)
+        .manageSubscriptionsSheet(isPresented: $showManageSubscriptions)
+        #endif
     }
 
     func suggestedModels(for kind: ProviderConfig.Kind) -> [String] {

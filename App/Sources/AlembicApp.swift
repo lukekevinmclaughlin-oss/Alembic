@@ -67,10 +67,16 @@ struct AlembicApp: App {
             // Run / cancel + screen navigation
             CommandMenu("Pipeline") {
                 Button(model.isRunningFull ? "Cancel Run" : "Run Full Pipeline") {
-                    if model.isRunningFull { model.cancelFull() } else { model.runFull() }
+                    if model.isRunningFull {
+                        model.cancelFull()
+                    } else if !model.hasAugmentOps || PurchaseManager.shared.hasAccess {
+                        model.runFull()
+                    }
                 }
                 .keyboardShortcut("r", modifiers: .command)
-                .disabled(!model.hasProject || (model.ops.isEmpty && !model.isRunningFull))
+                .disabled(!model.hasProject
+                          || (model.ops.isEmpty && !model.isRunningFull)
+                          || (model.hasAugmentOps && !PurchaseManager.shared.hasAccess && !model.isRunningFull))
 
                 Divider()
                 ForEach(Array(AppScreen.allCases.enumerated()), id: \.element) { i, screen in

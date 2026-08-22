@@ -3,9 +3,12 @@ import UniformTypeIdentifiers
 
 struct WelcomeView: View {
     @Environment(AppModel.self) private var model
+    @EnvironmentObject private var purchase: PurchaseManager
     @State private var showImporter = false
     @State private var dropHover = false
     @State private var appeared = false
+    @State private var showPaywall = false
+    @AppStorage("premiumIntroDismissed") private var premiumIntroDismissed = false
 
     var body: some View {
         ScrollView {
@@ -13,6 +16,10 @@ struct WelcomeView: View {
                 header
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 18)
+                if !purchase.hasAccess && !premiumIntroDismissed {
+                    premiumIntro
+                        .opacity(appeared ? 1 : 0)
+                }
                 modeChooser
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 22)
@@ -57,6 +64,35 @@ struct WelcomeView: View {
                       allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first {
                 model.importFile(url: url)
+            }
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView().environmentObject(purchase)
+        }
+    }
+
+    var premiumIntro: some View {
+        GlassCard(glow: true) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("Alembic Pro", systemImage: "sparkles")
+                        .font(.headline)
+                        .foregroundStyle(Theme.holo)
+                    Spacer()
+                    Text("OPTIONAL")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.secondary)
+                }
+                Text("Everything needed to import, clean, dedupe, protect, preview, report, and export data is free. Pro adds LLM-assisted enrichment when you need it.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Button("Try Premium") { showPaywall = true }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Theme.holo)
+                    Button("Continue Free") { premiumIntroDismissed = true }
+                        .buttonStyle(.plain)
+                }
             }
         }
     }
