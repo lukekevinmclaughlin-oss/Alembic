@@ -1,4 +1,31 @@
 import SwiftUI
+
+#if DIRECT_DISTRIBUTION
+struct PaywallView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            AuroraBackground(animated: true)
+            VStack(spacing: 20) {
+                HoloHUDView(size: 136, animated: true)
+                Text("Alembic Direct edition")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                Text("Every deterministic and LLM-assisted workflow is permanently unlocked. There is no subscription, account, or in-app purchase.")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 600)
+                Button("Continue") { dismiss() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.holo)
+            }
+            .padding(30)
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+#else
 import StoreKit
 
 struct PaywallView: View {
@@ -157,3 +184,4 @@ struct PaywallView: View {
         Label(text, systemImage: icon).font(.body.weight(.medium))
     }
 }
+#endif

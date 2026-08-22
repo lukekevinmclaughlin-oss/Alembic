@@ -1,4 +1,8 @@
 name: Alembic
+configs:
+  Debug: debug
+  Release: release
+  Direct: release
 options:
   bundleIdPrefix: com.lukemclaughlin
   deploymentTarget:
@@ -60,6 +64,16 @@ targets:
         PRODUCT_NAME: Alembic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
+      configs:
+        Direct:
+          PRODUCT_BUNDLE_IDENTIFIER: com.lukemclaughlin.alembic.direct
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DIRECT_DISTRIBUTION"
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_ENTITLEMENTS: ""
+          ENABLE_HARDENED_RUNTIME: YES
+          OTHER_CODE_SIGN_FLAGS: --timestamp
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
 
   Alembic-iOS:
     type: application

@@ -1,6 +1,8 @@
 import SwiftUI
 import AlembicEngine
+#if !DIRECT_DISTRIBUTION
 import StoreKit
+#endif
 
 /// BYO-key provider settings. Any provider, user's own key, stored in Keychain.
 /// The deterministic pipeline never needs any of this.
@@ -10,7 +12,9 @@ struct ProviderSettingsView: View {
     @State private var testResult: String?
     @State private var testing = false
     @State private var showPaywall = false
+    #if !DIRECT_DISTRIBUTION
     @State private var showManageSubscriptions = false
+    #endif
 
     var body: some View {
         @Bindable var model = model
@@ -18,6 +22,14 @@ struct ProviderSettingsView: View {
             VStack(spacing: 16) {
                 GlassCard {
                     VStack(alignment: .leading, spacing: 10) {
+                        #if DIRECT_DISTRIBUTION
+                        CardHeader(icon: "checkmark.seal.fill",
+                                   title: "Alembic Direct edition",
+                                   subtitle: "Every deterministic and LLM-assisted workflow is permanently unlocked with no subscription.")
+                        Text("One-time website purchase. No account, in-app purchase, renewal, or restore step.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        #else
                         CardHeader(icon: purchase.hasAccess ? "checkmark.seal.fill" : "sparkles",
                                    title: purchase.hasAccess ? "Alembic Pro active" : "Alembic Free",
                                    subtitle: purchase.hasAccess ? "LLM-assisted enrichment is unlocked on this Apple Account." : "The deterministic pipeline is free. Upgrade only when you want LLM-assisted enrichment.")
@@ -41,6 +53,7 @@ struct ProviderSettingsView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
+                        #endif
                     }
                 }
 
@@ -166,11 +179,13 @@ struct ProviderSettingsView: View {
             .frame(maxWidth: .infinity)
         }
         .navigationTitle("Settings")
+        #if !DIRECT_DISTRIBUTION
         .sheet(isPresented: $showPaywall) {
             PaywallView().environmentObject(purchase)
         }
         #if os(iOS)
         .manageSubscriptionsSheet(isPresented: $showManageSubscriptions)
+        #endif
         #endif
     }
 

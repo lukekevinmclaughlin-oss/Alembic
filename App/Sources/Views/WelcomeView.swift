@@ -16,10 +16,12 @@ struct WelcomeView: View {
                 header
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 18)
+                #if !DIRECT_DISTRIBUTION
                 if !purchase.hasAccess && !premiumIntroDismissed {
                     premiumIntro
                         .opacity(appeared ? 1 : 0)
                 }
+                #endif
                 modeChooser
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 22)
@@ -66,11 +68,14 @@ struct WelcomeView: View {
                 model.importFile(url: url)
             }
         }
+        #if !DIRECT_DISTRIBUTION
         .sheet(isPresented: $showPaywall) {
             PaywallView().environmentObject(purchase)
         }
+        #endif
     }
 
+    #if !DIRECT_DISTRIBUTION
     var premiumIntro: some View {
         GlassCard(glow: true) {
             VStack(alignment: .leading, spacing: 12) {
@@ -96,6 +101,7 @@ struct WelcomeView: View {
             }
         }
     }
+    #endif
 
     var header: some View {
         VStack(spacing: 8) {

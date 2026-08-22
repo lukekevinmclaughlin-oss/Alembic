@@ -1,4 +1,18 @@
 import Foundation
+
+#if DIRECT_DISTRIBUTION
+@MainActor
+final class PurchaseManager: ObservableObject {
+    static let shared = PurchaseManager()
+    @Published private(set) var hasAccess = true
+    @Published private(set) var entitlementExpirationDate: Date?
+    @Published private(set) var isLoading = false
+    @Published var lastError: String?
+    private init() {}
+    func refresh() async {}
+    func restore() async {}
+}
+#else
 import StoreKit
 
 @MainActor
@@ -199,3 +213,4 @@ final class PurchaseManager: ObservableObject {
 
     enum StoreError: Error { case failedVerification }
 }
+#endif

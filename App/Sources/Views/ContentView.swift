@@ -1,11 +1,15 @@
 import SwiftUI
 import AlembicEngine
+#if !DIRECT_DISTRIBUTION
 import StoreKit
+#endif
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
     @EnvironmentObject private var purchase: PurchaseManager
+    #if !DIRECT_DISTRIBUTION
     @Environment(\.requestReview) private var requestReview
+    #endif
     @State private var showPaywall = false
 
     var body: some View {
@@ -26,6 +30,7 @@ struct ContentView: View {
         .sheet(item: sqliteBinding) { pending in
             SQLiteTablePickerSheet(pending: pending)
         }
+        #if !DIRECT_DISTRIBUTION
         .sheet(isPresented: $showPaywall) {
             PaywallView()
                 .environmentObject(purchase)
@@ -34,6 +39,7 @@ struct ContentView: View {
             guard ReviewPromptPolicy.recordSuccessfulRun() else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { requestReview() }
         }
+        #endif
     }
 
     var sqliteBinding: Binding<AppModel.PendingSQLite?> {
