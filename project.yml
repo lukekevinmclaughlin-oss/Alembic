@@ -1,0 +1,102 @@
+name: Alembic
+options:
+  bundleIdPrefix: com.lukemclaughlin
+  deploymentTarget:
+    macOS: "14.0"
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+packages:
+  AlembicEngine:
+    path: Engine
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "11"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: 24UCS53598
+    INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+
+targets:
+  Alembic-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - App/Sources
+      - App/Resources
+    dependencies:
+      - package: AlembicEngine
+    info:
+      path: App/Info-macOS.plist
+      properties:
+        CFBundleDisplayName: Alembic
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
+        NSHumanReadableCopyright: "© 2026 Luke McLaughlin"
+        LSApplicationCategoryType: public.app-category.developer-tools
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Dataset
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.comma-separated-values-text
+              - public.tab-separated-values-text
+              - public.json
+              - public.plain-text
+              - public.text
+    entitlements:
+      path: App/Alembic-macOS.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-write: true
+        com.apple.security.files.bookmarks.app-scope: true
+        com.apple.security.network.client: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lukemclaughlin.alembic
+        PRODUCT_NAME: Alembic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+
+  Alembic-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - App/Sources
+      - App/Resources
+    dependencies:
+      - package: AlembicEngine
+    info:
+      path: App/Info-iOS.plist
+      properties:
+        CFBundleDisplayName: Alembic
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        LSSupportsOpeningDocumentsInPlace: true
+        UIFileSharingEnabled: true
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Dataset
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.comma-separated-values-text
+              - public.tab-separated-values-text
+              - public.json
+              - public.plain-text
+              - public.text
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lukemclaughlin.alembic
+        PRODUCT_NAME: Alembic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
