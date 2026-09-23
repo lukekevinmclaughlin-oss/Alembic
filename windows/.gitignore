@@ -1,0 +1,8 @@
+node_modules/
+dist/
+release/
+vendor/
+build/icon.ico
+build/uninstall-files.nsh
+public/icon.png
+public/cl100k_base.tiktoken

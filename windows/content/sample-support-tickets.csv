@@ -1,0 +1,11 @@
+ticket_id,customer,message,status,created
+1001,Alice,"  The export keeps failing when I click download.  Please help. Contact me at alice@example.com ",OPEN,2024-01-15
+1002,Bob,"The export keeps failing when I click download. Please help.",OPEN,15.01.2024
+1003,Chen,"导出功能一直失败，点击下载按钮没有任何反应，请尽快帮我解决这个问题。",open,2024-02-03
+1004,Dana,"!!!!! URGENT URGENT URGENT FIX NOW !!!!!",N/A,2024-02-11
+1005,Erik,"Love the product. One small bug: the CSV has a trailing comma on the last row which breaks my parser.",CLOSED,Feb 20 2024
+1006,Farah,"My API key sk-ant-abc123def456ghi789jkl012mno345pqr leaked in the logs — please rotate it.",OPEN,2024-03-01
+1007,Greg,"asdf asdf asdf $$$ ### @@@",-,2024-03-05
+1008,Hana,"Could you add a dark mode? Would really help for late-night work sessions with the dashboard.",OPEN,2024-03-09
+1009,Alice,"The export keeps failing when I click download. Please help.",open,2024-01-15
+1010,Ivan,"Feature request: bulk edit for tickets, and a keyboard shortcut to jump between them quickly.",CLOSED,2024-03-14

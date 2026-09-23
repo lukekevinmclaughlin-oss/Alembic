@@ -1,0 +1,104 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.exactDedupe = exactDedupe;
+exports.fuzzyDedupe = fuzzyDedupe;
+const model_1 = require("./model.cjs");
+function collect(ds, parent, candidates, method) { const groups = new Map(); for (let i = 0; i < parent.length; i++) {
+    let p = i;
+    while (parent[p] !== p)
+        p = parent[p];
+    const ids = groups.get(p) ?? [];
+    ids.push(ds.records[i].id);
+    groups.set(p, ids);
+} const keptIDs = [], droppedIDs = [], clusters = []; for (const ids of groups.values()) {
+    keptIDs.push(ids[0]);
+    droppedIDs.push(...ids.slice(1));
+    if (ids.length > 1)
+        clusters.push(ids);
+} const kept = new Set(keptIDs), dropped = new Set(droppedIDs); return { keptIDs: ds.records.filter(r => kept.has(r.id)).map(r => r.id), droppedIDs: ds.records.filter(r => dropped.has(r.id)).map(r => r.id), clusters, candidates, method }; }
+function exactDedupe(ds, columns = [], signal) { const idxs = columns.length ? columns.map(c => (0, model_1.requireColumn)(ds, c)) : ds.columns.map((_, i) => i), seen = new Map(), parent = ds.records.map((_, i) => i); for (let i = 0; i < ds.records.length; i++) {
+    (0, model_1.checkCancelled)(signal);
+    const key = JSON.stringify(idxs.map(c => (0, model_1.cellKey)(ds.records[i].values[c]))), existing = seen.get(key);
+    if (existing === undefined)
+        seen.set(key, i);
+    else
+        parent[i] = existing;
+} return collect(ds, parent, 0, 'exact typed cell tuples; no hash-only equality'); }
+function shingles(text) { const tokens = (0, model_1.words)(text); if (!tokens.length)
+    return new Set(); if (tokens.length < 3)
+    return new Set([tokens.join(' ')]); const out = new Set(); for (let i = 0; i + 3 <= tokens.length; i++)
+    out.add(tokens.slice(i, i + 3).join(' ')); return out; }
+function hash32(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+} return h >>> 0; }
+function mix32(n) { n = Math.imul(n ^ (n >>> 16), 0x85ebca6b); n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35); return (n ^ (n >>> 16)) >>> 0; }
+function fuzzyDedupe(ds, column, threshold = .85, signal) {
+    if (!Number.isFinite(threshold) || threshold < .5 || threshold > 1)
+        throw Error('Fuzzy threshold must be between 0.5 and 1.');
+    const idx = (0, model_1.requireColumn)(ds, column), sets = [], signatures = [], parent = ds.records.map((_, i) => i), equivalents = new Map(), representatives = [];
+    let totalShingles = 0;
+    function find(i) { while (parent[i] !== i) {
+        parent[i] = parent[parent[i]];
+        i = parent[i];
+    } return i; }
+    function union(a, b) { a = find(a); b = find(b); if (a !== b)
+        parent[Math.max(a, b)] = Math.min(a, b); }
+    for (let i = 0; i < ds.records.length; i++) {
+        (0, model_1.checkCancelled)(signal);
+        const text = (0, model_1.display)(ds.records[i].values[idx]), set = shingles(text);
+        sets.push(set);
+        totalShingles += set.size;
+        if (totalShingles > 2_000_000)
+            throw Error('Near-duplicate analysis exceeds two million row shingles. Use smaller batches.');
+        const key = set.size ? JSON.stringify([...set].sort()) : JSON.stringify(['empty-text', (0, model_1.cellKey)(ds.records[i].values[idx])]);
+        const previous = equivalents.get(key);
+        if (previous !== undefined) {
+            union(previous, i);
+            signatures.push(signatures[previous]);
+            continue;
+        }
+        equivalents.set(key, i);
+        const sig = new Uint32Array(128).fill(0xffffffff);
+        if (set.size) {
+            for (const s of set) {
+                const hash = hash32(s);
+                for (let k = 0; k < 128; k++) {
+                    const n = mix32((hash + Math.imul(k + 1, 0x9e3779b9)) >>> 0);
+                    if (n < sig[k])
+                        sig[k] = n;
+                }
+            }
+            representatives.push(i);
+        }
+        signatures.push(sig);
+    }
+    const bands = threshold >= .9 ? 16 : threshold >= .7 ? 32 : 64, width = 128 / bands, pairs = new Set(), n = ds.records.length;
+    for (let band = 0; band < bands; band++) {
+        (0, model_1.checkCancelled)(signal);
+        const buckets = new Map();
+        for (const i of representatives) {
+            const key = signatures[i].slice(band * width, (band + 1) * width).join(','), bucket = buckets.get(key) ?? [];
+            for (const j of bucket) {
+                pairs.add(j * n + i);
+                if (pairs.size > 1_000_000)
+                    throw Error('Near-duplicate candidate limit reached; no partial result applied. Raise the threshold or use smaller batches.');
+            }
+            bucket.push(i);
+            buckets.set(key, bucket);
+        }
+    }
+    for (const pair of pairs) {
+        (0, model_1.checkCancelled)(signal);
+        const a = Math.floor(pair / n), b = pair % n, sa = sets[a], sb = sets[b];
+        if (Math.min(sa.size, sb.size) / Math.max(sa.size, sb.size) < threshold)
+            continue;
+        let shared = 0;
+        for (const s of sa)
+            if (sb.has(s))
+                shared++;
+        if (shared / (sa.size + sb.size - shared) >= threshold)
+            union(a, b);
+    }
+    return collect(ds, parent, pairs.size, '128-hash deterministic MinHash/LSH candidates, exact word-shingle Jaccard verification; approximate candidate recall');
+}

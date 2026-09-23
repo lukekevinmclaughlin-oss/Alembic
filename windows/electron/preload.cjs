@@ -1,0 +1,2 @@
+const{contextBridge,ipcRenderer}=require('electron');
+contextBridge.exposeInMainWorld('desktop',{invoke:(command,args={})=>ipcRenderer.invoke('alembic:invoke',command,args),onProgress:callback=>{const listener=(_event,text)=>callback(text);ipcRenderer.on('alembic:progress',listener);return()=>ipcRenderer.removeListener('alembic:progress',listener);},onReview:callback=>{const listener=(_event,review)=>callback(review);ipcRenderer.on('alembic:review',listener);return()=>ipcRenderer.removeListener('alembic:review',listener);}});

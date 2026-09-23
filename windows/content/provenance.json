@@ -1,0 +1,205 @@
+{
+  "source": "Original macOS Alembic source; left unchanged",
+  "files": [
+    {
+      "path": "Engine/Sources/AlembicEngine/Augment/Augmentor.swift",
+      "bytes": 12341,
+      "sha256": "a47456e881dd7140e001d124ef44762850e9431797c10ef628b38c3a402b3cde"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Augment/Provider.swift",
+      "bytes": 16808,
+      "sha256": "f0659472cf4fb0e41f01617d9d3ce9c5b62e9e42419afa356876cf7a7e2d58e1"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Chunk/Chunker.swift",
+      "bytes": 10275,
+      "sha256": "6b15a9c634174c0a0d4edc02ef145e248bc33d91a05ec755fe54a484997dab3f"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Clean/Normalize.swift",
+      "bytes": 8709,
+      "sha256": "7e284d9fe96ea576c568a7dd9122eade0ccbf650e6c1783433f8983c15763309"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Core/Value.swift",
+      "bytes": 8770,
+      "sha256": "ef443ed01d6a0ea962e7b103e1a3fc58ee630207b45e69ff8830ab96581e826e"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Dedupe/Dedupe.swift",
+      "bytes": 9217,
+      "sha256": "467e2e5100d91312f84e8790ac051f7eca0dc9f9d00b798b072301ad635cafa3"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Detect/Encoding.swift",
+      "bytes": 5210,
+      "sha256": "a7cf49c621c6bae9e011d597d6148b1b29cda10b3740a2ca80d11367db8f78dc"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Detect/LanguageID.swift",
+      "bytes": 6205,
+      "sha256": "d573dd5af6174b495a0d90b0e60a76250d24d0f981f13d96bc888fee365ea587"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Detect/TypeInference.swift",
+      "bytes": 11225,
+      "sha256": "7ec27e47b2ef4b1d92fc1c08ac3905d17f7ee299532f9323a5e5ed8dabec5b83"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/IO/CSV.swift",
+      "bytes": 9731,
+      "sha256": "80a207053e2c190b43d9e191e5b4b9819679f00f513261da1aa5b60054c799a6"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/IO/Importer.swift",
+      "bytes": 6148,
+      "sha256": "fcf8a7ca993c72ea6ed7ab11f19ef31683c1d2d1fdbee09b0a375fc4edc194f4"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/IO/JSON.swift",
+      "bytes": 8704,
+      "sha256": "29441620650dea03632f7b5b5eb39647b7aff82147ace3a04b02d10cc13cfb5c"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/IO/SQLiteReader.swift",
+      "bytes": 3486,
+      "sha256": "36645dd2fbf0bf5187157691cf6eec273eb8ca2c434ce0036444d9339a18769c"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/IO/TextReader.swift",
+      "bytes": 4925,
+      "sha256": "fc1cfd9ff63d1eb1e3e95a857bd31472bfa0c979d674011ee9124b3b028279a0"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Pipeline/Executor.swift",
+      "bytes": 17022,
+      "sha256": "cce52fd09d08d106754316eef1d84153162ea0d17c8eb5d7e7c712199da51760"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Pipeline/Expression.swift",
+      "bytes": 14997,
+      "sha256": "c59518db66a050fd95484ae9e470c5995582d943685f4390e37a9547f3670537"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Pipeline/Recipe.swift",
+      "bytes": 5454,
+      "sha256": "329dbf080915d430e94f92be7fe0621025017aa0bfdd5d3cc3c553ca8a009630"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Quality/Decontaminate.swift",
+      "bytes": 2897,
+      "sha256": "9f113e0cc23679c7c1c5ef5029b16f7dd6e680c5d0529b0afbbf8ffd026b0f1c"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Quality/Heuristics.swift",
+      "bytes": 5777,
+      "sha256": "0ba70a7740c76f104dad229479e44c78d95b30674786a1b7fe2d40729a81184a"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Quality/PII.swift",
+      "bytes": 7381,
+      "sha256": "36e8ed25b3f42968c567f6d0daaa77d83d45cb726c7b6d45dd4420cabda2d95f"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Report/ColumnProfile.swift",
+      "bytes": 4209,
+      "sha256": "622252ffb256d638acfcd6c8ff00d2757baa3a4bc1a605e23ce297b9f728b75e"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Report/DatasetCard.swift",
+      "bytes": 11223,
+      "sha256": "8796fc97d1a0151453c1bb34805ec848a804683a5c97be6b5ed89178bfd9aead"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Shape/Schemas.swift",
+      "bytes": 12010,
+      "sha256": "8b54541f5f9e9b1b116d5fa14940936777a1b6ad88d404fdb715a5a3598ae54d"
+    },
+    {
+      "path": "Engine/Sources/AlembicEngine/Tokenize/BPETokenizer.swift",
+      "bytes": 6955,
+      "sha256": "0e4abb951bdff48567694b6f178e5b886b33b5aac65e09b3ac7263b1ae7357b0"
+    },
+    {
+      "path": "App/Sources/AlembicApp.swift",
+      "bytes": 4015,
+      "sha256": "e9c76763e7a08d65eacd5094bc893000498c50c4a36303174409b6a9b34780bb"
+    },
+    {
+      "path": "App/Sources/Model/AppModel.swift",
+      "bytes": 24710,
+      "sha256": "644d49cbd1f9663784fcefa8f5f4f7c98aac78c1856b28529af6a7aef6b00560"
+    },
+    {
+      "path": "App/Sources/Model/KeychainStore.swift",
+      "bytes": 1440,
+      "sha256": "65900d9f327bd7c3c6ddf0db4b78011b084946259eb46252223ad9e48a4151f5"
+    },
+    {
+      "path": "App/Sources/Model/PurchaseManager.swift",
+      "bytes": 8435,
+      "sha256": "512f63618692adcef99c48dafed22e5613e3e8c1089099a59290bc6d2ff1ac50"
+    },
+    {
+      "path": "App/Sources/Model/ReviewPromptPolicy.swift",
+      "bytes": 1127,
+      "sha256": "6866db3463c0ff3ba8132a9251b9619df389b88d038fa2fe8e40ae4444e51b5e"
+    },
+    {
+      "path": "App/Sources/Theme/Theme.swift",
+      "bytes": 15975,
+      "sha256": "53fc696038a4f1a63f35b4853b410cdd2c6aeeb7760eaf66390287a27d0b7f29"
+    },
+    {
+      "path": "App/Sources/Views/ContentView.swift",
+      "bytes": 11250,
+      "sha256": "5fdb7edd2fec4dc66129b2445f3f4a1a3c4549186f66409490f6f9fd435b73f6"
+    },
+    {
+      "path": "App/Sources/Views/ExportView.swift",
+      "bytes": 11043,
+      "sha256": "fcb0c4f568a7e1d174d56ff90c24fb58a86c7dea7b6da511bd6e95425c521d97"
+    },
+    {
+      "path": "App/Sources/Views/OpCatalog.swift",
+      "bytes": 9035,
+      "sha256": "afb099f714295666c7000fc0b59346860828aabbc6b96a1a62d1d45cb8e37d7a"
+    },
+    {
+      "path": "App/Sources/Views/OpEditor.swift",
+      "bytes": 23051,
+      "sha256": "c02bfe32e36915789dadbf69c61542c391b9e49f1e4f67f8f2182de303e415c7"
+    },
+    {
+      "path": "App/Sources/Views/PaywallView.swift",
+      "bytes": 8079,
+      "sha256": "414e452d2bd460180aa1faed99b509b625b82c0e6f4c71c0722799620d91e661"
+    },
+    {
+      "path": "App/Sources/Views/PipelineView.swift",
+      "bytes": 17872,
+      "sha256": "a2cc3cedee08e149229d491339b22e391cc0c5ac6ecbccb779b478d902b7d626"
+    },
+    {
+      "path": "App/Sources/Views/PreviewGridView.swift",
+      "bytes": 19676,
+      "sha256": "3414ef604c5b98a4bc8572953fd7f85d35a5cf6d51c040c7d4a00868eda08f46"
+    },
+    {
+      "path": "App/Sources/Views/ProviderSettingsView.swift",
+      "bytes": 12117,
+      "sha256": "f4cea6a69a5f1f0720ce35d2633fb3a56ac6c83402cdc4137a6bcdf519f670a7"
+    },
+    {
+      "path": "App/Sources/Views/ReportView.swift",
+      "bytes": 13601,
+      "sha256": "23b93525b2ca00285d8852fa63f7d1a7dd39c65bf1c5c20ad4136f08b23432e8"
+    },
+    {
+      "path": "App/Sources/Views/WelcomeView.swift",
+      "bytes": 12794,
+      "sha256": "3f27518bcf4019d0e50bb9f229c84d1beb187c3aeaf2a0e5b5b0747d942a932e"
+    }
+  ]
+}

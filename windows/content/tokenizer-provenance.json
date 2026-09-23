@@ -1,0 +1,12 @@
+{
+  "name": "cl100k_base",
+  "mergeableRanks": 100256,
+  "originalBytes": 1781382,
+  "originalSHA256": "59d2daf6609eaece5e7c81dca8f275226a54ee4644913ba9995cc6093ea3a8b7",
+  "normalizedSHA256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+  "note": "CRLF normalized to LF; exact official vocabulary hash; literal special-token strings treated as ordinary text.",
+  "source": "https://github.com/openai/tiktoken/blob/main/tiktoken_ext/openai_public.py",
+  "vocabulary": "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken",
+  "license": "MIT; OpenAI, Shantanu Jain",
+  "verifiedAt": "2026-09-23"
+}

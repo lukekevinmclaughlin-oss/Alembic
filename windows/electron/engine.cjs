@@ -1,0 +1,201 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AlembicEngine = void 0;
+const model_1 = require("./model.cjs");
+const recipe_1 = require("./recipe.cjs");
+const workspace_1 = require("./workspace.cjs");
+const pipeline_1 = require("./pipeline.cjs");
+const importers_1 = require("./importers.cjs");
+const report_1 = require("./report.cjs");
+const exports_1 = require("./exports.cjs");
+const normalize_1 = require("./normalize.cjs");
+const quality_1 = require("./quality.cjs");
+const chunker_1 = require("./chunker.cjs");
+class AlembicEngine {
+    tokenizer;
+    adapters;
+    state;
+    preview = null;
+    previewRevision = -1;
+    previewError = '';
+    busy = false;
+    checkpointTail = Promise.resolve();
+    constructor(tokenizer, adapters, state = (0, workspace_1.emptyWorkspace)()) {
+        this.tokenizer = tokenizer;
+        this.adapters = adapters;
+        this.state = (0, workspace_1.validateWorkspace)(state);
+    }
+    async commit(next) { (0, workspace_1.stringifyWorkspace)(next); await this.adapters.save(next); this.state = next; }
+    async refreshPreview() { if (!this.state.source) {
+        this.preview = null;
+        this.previewRevision = -1;
+        this.previewError = '';
+        return;
+    } try {
+        const revision = this.state.revision, result = await (0, pipeline_1.runPipeline)((0, model_1.sample)(this.state.source.dataset), this.state.steps, this.tokenizer, { preview: true });
+        this.preview = result;
+        this.previewRevision = revision;
+        this.previewError = '';
+    }
+    catch (e) {
+        this.previewError = e.message;
+    } }
+    overview() { const s = this.state, current = s.completed?.revision === s.revision; return { revision: s.revision, theme: s.theme, reduceMotion: s.reduceMotion, mode: s.mode, screen: s.screen, steps: s.steps, canUndo: !!s.undo.length, canRedo: !!s.redo.length, source: s.source ? { source: s.source.source, format: s.source.format, textColumn: (0, workspace_1.guessTextColumn)(s.source.dataset), columns: s.source.dataset.columns, rows: s.source.dataset.records.length, details: s.source.details, warnings: s.source.warnings, rejected: s.source.rejected.length } : null, preview: this.preview ? { rows: this.preview.dataset.records.length, columns: this.preview.dataset.columns, metrics: this.preview.metrics, current: this.previewRevision === s.revision, skippedAugmentations: this.preview.skippedAugmentations } : null, previewError: this.previewError, completed: s.completed ? { current, rows: s.completed.result.dataset.records.length, columns: s.completed.result.dataset.columns, metrics: s.completed.result.metrics, rejected: s.completed.result.rejected.reduce((n, b) => n + b.rows.length, 0), conversions: s.completed.result.conversions.length } : null, checkpointCount: Object.keys(s.cache).length, priceInput: s.priceInput, priceOutput: s.priceOutput, busy: this.busy }; }
+    dataset(view) { if (view === 'source' && this.state.source)
+        return this.state.source.dataset; if (view === 'preview' && this.preview && this.previewRevision === this.state.revision)
+        return this.preview.dataset; if (view === 'full' && this.state.completed && this.state.completed.revision === this.state.revision)
+        return this.state.completed.result.dataset; throw Error('No current ' + view + ' dataset. Refresh the preview or run the full pipeline.'); }
+    page(view, offset = 0, query = '', sortColumn = '', descending = false) { if (!Number.isSafeInteger(offset) || offset < 0 || query.length > 300)
+        throw Error('Invalid preview page.'); const ds = this.dataset(view), needle = query.toLowerCase(), filtered = ds.records.filter(r => !needle || r.values.some(v => (0, model_1.display)(v).toLowerCase().includes(needle))); const sort = ds.columns.indexOf(sortColumn); if (sort >= 0)
+        filtered.sort((a, b) => { const x = a.values[sort], y = b.values[sort]; let c = 0; if (x.t === 'int' && y.t === 'int') {
+            const n = BigInt(x.v), m = BigInt(y.v);
+            c = n < m ? -1 : n > m ? 1 : 0;
+        }
+        else if ((x.t === 'int' || x.t === 'double') && (y.t === 'int' || y.t === 'double')) {
+            const n = x.t === 'int' ? BigInt(x.v) : x.v, m = y.t === 'int' ? BigInt(y.v) : y.v;
+            c = n < m ? -1 : n > m ? 1 : 0;
+        }
+        else {
+            const n = (0, model_1.display)(x), m = (0, model_1.display)(y);
+            c = n < m ? -1 : n > m ? 1 : 0;
+        } return (descending ? -c : c) || a.id - b.id; }); const diff = view === 'preview' && this.state.source ? (0, report_1.datasetDiff)((0, model_1.sample)(this.state.source.dataset), ds) : null; return { columns: ds.columns, rows: filtered.slice(offset, offset + 40).map(r => ({ id: r.id, values: r.values.map(v => ({ type: v.t, text: (0, model_1.display)(v).slice(0, 300), truncated: (0, model_1.display)(v).length > 300 })), change: diff?.rows[r.id] ?? null })), offset, total: filtered.length, droppedIDs: diff?.droppedIDs ?? [], addedColumns: diff?.addedColumns ?? [], removedColumns: diff?.removedColumns ?? [] }; }
+    cell(view, id, column) { const ds = this.dataset(view), row = ds.records.find(r => r.id === id), idx = ds.columns.indexOf(column); if (!row || idx < 0)
+        throw Error('Cell not found.'); const before = this.state.source?.dataset, original = before?.records.find(r => r.id === id), oldIdx = before?.columns.indexOf(column) ?? -1; return { column, id, after: row.values[idx], before: original && oldIdx >= 0 ? original.values[oldIdx] : null }; }
+    profile(view, column) { const result = (0, report_1.profileColumn)(this.dataset(view), column, this.tokenizer); return { ...result, topValues: result.topValues.map(v => ({ ...v, value: v.value.slice(0, 600), truncated: v.value.length > 600 })) }; }
+    report() { const result = this.state.completed; if (!result || result.revision !== this.state.revision)
+        throw Error('Run the current full pipeline first.'); return (0, report_1.datasetCard)(result.result.dataset, result.result.metrics, this.tokenizer); }
+    async useImport(raw) { const imported = (0, workspace_1.validateImport)(raw); await this.commit({ ...this.state, revision: this.state.revision + 1, source: imported, completed: null, screen: 'pipeline', steps: this.state.steps.length ? this.state.steps : (0, workspace_1.starterSteps)(this.state.mode, imported.dataset), undo: [], redo: [] }); await this.refreshPreview(); }
+    async setSteps(steps) { await this.commit((0, workspace_1.editSteps)(this.state, steps)); await this.refreshPreview(); }
+    checkpoint(key, values) { const job = this.checkpointTail.then(async () => { if (!/^[0-9a-f]{64}$/.test(key))
+        throw Error('Invalid response fingerprint.'); const cache = { ...this.state.cache, [key]: values }; if (Object.keys(cache).length > 50000 || JSON.stringify(cache).length > 32 * 1024 * 1024)
+        throw Error('Saved augmentation responses reached the 64 MiB cache limit. Export completed work and start a smaller batch.'); await this.commit({ ...this.state, cache }); }); this.checkpointTail = job.catch(() => { }); return job; }
+    preset(name) { if (!this.state.source)
+        throw Error('Import data first.'); const column = (0, workspace_1.guessTextColumn)(this.state.source.dataset), normal = { kind: 'normalizeText', columns: [], options: normalize_1.standard }; let ops; switch (name) {
+        case 'training':
+            ops = [normal, { kind: 'unifyNulls', columns: [] }, { kind: 'autoType' }, { kind: 'dedupeExact', columns: [] }, { kind: 'dedupeFuzzy', column, threshold: .85 }, { kind: 'qualityFilter', column, rules: quality_1.standardQuality }, { kind: 'split', train: .9, validation: .05, test: .05, seed: '42', stratifyBy: null }];
+            break;
+        case 'rag':
+            ops = [normal, { kind: 'chunkText', column, config: chunker_1.defaultChunk }, { kind: 'addTokenCount', column }, { kind: 'addLanguage', column }];
+            break;
+        case 'privacy':
+            ops = [normal, { kind: 'redactPII', columns: [], kinds: [], mode: 'hash' }];
+            break;
+        case 'dedupe':
+            ops = [normal, { kind: 'dedupeExact', columns: [] }, { kind: 'dedupeFuzzy', column, threshold: .75 }];
+            break;
+        default: throw Error('Unknown preset.');
+    } return ops.map(recipe_1.makeStep); }
+    async runFull() { if (!this.state.source)
+        throw Error('Import data first.'); const revision = this.state.revision, result = await (0, pipeline_1.runPipeline)(this.state.source.dataset, this.state.steps, this.tokenizer, { augment: this.adapters.augment, progress: (i, n, name) => this.adapters.progress?.(`Step ${i + 1}/${n}: ${name}`) }); if (this.state.revision !== revision)
+        throw Error('Pipeline changed during the run.'); await this.commit({ ...this.state, completed: { revision, result }, screen: 'report' }); return this.overview(); }
+    export(kind, args = {}) {
+        if (kind === 'backup')
+            return { filename: 'Alembic-workspace.json', text: (0, workspace_1.stringifyWorkspace)(this.state), note: 'Readable dataset, recipe, generated responses and reports; no API keys.' };
+        if (kind === 'recipe')
+            return { filename: 'Alembic-recipe.json', text: (0, recipe_1.exportRecipe)(this.state.source ? this.state.source.source + ' recipe' : 'Alembic recipe', this.state.steps), note: 'Enabled operations in Mac-compatible recipe shape.' };
+        if (kind === 'card-md' || kind === 'card-json') {
+            const card = this.report();
+            return { filename: kind === 'card-md' ? 'dataset-card.md' : 'dataset-card.json', text: kind === 'card-md' ? (0, report_1.cardMarkdown)(card) : JSON.stringify(card, null, 2) + '\n', note: '' };
+        }
+        if (kind === 'import-rejections') {
+            if (!this.state.source)
+                throw Error('No imported source.');
+            return { filename: 'import-quarantine.jsonl', text: this.state.source.rejected.map(r => JSON.stringify(r)).join('\n') + '\n', note: 'Rejected source lines and reasons.' };
+        }
+        if (kind === 'pipeline-rejections') {
+            const completed = this.state.completed;
+            if (!completed || completed.revision !== this.state.revision)
+                throw Error('Run the current pipeline first.');
+            return { filename: 'pipeline-quarantine.jsonl', text: completed.result.rejected.map(b => (0, exports_1.quarantinedJSONL)(b.columns, b.rows, { stepId: b.stepId, opName: b.opName })).join(''), note: 'Rows removed by pipeline operations; full data retained.' };
+        }
+        if (kind === 'conversions') {
+            if (!this.state.completed || this.state.completed.revision !== this.state.revision)
+                throw Error('Run the current pipeline first.');
+            return { filename: 'failed-conversions.json', text: JSON.stringify(this.state.completed.result.conversions, null, 2) + '\n', note: 'Original typed values for failed conversions.' };
+        }
+        let ds = this.dataset(args.view ?? 'full');
+        if (args.splitColumn) {
+            const idx = ds.columns.indexOf(args.splitColumn);
+            if (idx < 0 || !['train', 'validation', 'test'].includes(args.splitValue ?? ''))
+                throw Error('Choose a split column and partition.');
+            ds = { columns: ds.columns, records: ds.records.filter(r => (0, model_1.display)(r.values[idx]) === args.splitValue) };
+        }
+        if (kind === 'jsonl')
+            return { filename: 'dataset.jsonl', text: (0, importers_1.rawJSONL)(ds), note: '' };
+        if (kind === 'json')
+            return { filename: 'dataset.json', text: '[' + (0, importers_1.rawJSONL)(ds).trim().split('\n').filter(Boolean).join(',') + ']\n', note: '' };
+        if (kind === 'csv') {
+            const csv = (0, importers_1.rawCSV)(ds, args.spreadsheetSafe !== false);
+            return { filename: 'dataset.csv', text: csv.text, note: csv.escapedCells + ' formula-like cells prefixed with an apostrophe.' };
+        }
+        if (kind === 'shaped' || kind === 'schema-quarantine') {
+            if (!args.schema || !args.mapping)
+                throw Error('Choose a schema and field mapping.');
+            const shaped = (0, exports_1.shapeDataset)(ds, args.schema, args.mapping);
+            return { filename: kind === 'shaped' ? args.schema + '.jsonl' : 'schema-quarantine.jsonl', text: kind === 'shaped' ? shaped.jsonl : (0, exports_1.quarantinedJSONL)(shaped.columns, shaped.quarantined), note: `${shaped.validCount} valid rows; ${shaped.quarantined.length} quarantined.`, valid: shaped.validCount, rejected: shaped.quarantined.length };
+        }
+        throw Error('Unknown export format.');
+    }
+    async command(name, args = {}) { if (name === 'overview')
+        return this.overview(); if (name === 'page')
+        return this.page(args.view, args.offset, args.query, args.sortColumn, args.descending); if (name === 'cell')
+        return this.cell(args.view, args.id, args.column); if (name === 'profile')
+        return this.profile(args.view, args.column); if (name === 'report')
+        return this.report(); if (name === 'export')
+        return this.export(args.kind, args); if (name === 'validate-export') {
+        const r = this.export('shaped', args);
+        return { valid: r.valid, rejected: r.rejected };
+    } if (this.busy)
+        throw Error('An operation is already running.'); this.busy = true; try {
+        switch (name) {
+            case 'import-text':
+                await this.useImport((0, importers_1.importContent)(args.text, args.source, args.options));
+                break;
+            case 'import-bytes':
+                await this.useImport((0, importers_1.importBytes)(new Uint8Array(args.bytes), args.source, args.options));
+                break;
+            case 'import-result':
+                await this.useImport(args.result);
+                break;
+            case 'steps':
+                await this.setSteps(args.steps);
+                break;
+            case 'preset':
+                await this.setSteps(this.preset(args.name));
+                break;
+            case 'undo':
+            case 'redo':
+                await this.commit((0, workspace_1.historyStep)(this.state, name));
+                await this.refreshPreview();
+                break;
+            case 'recipe':
+                await this.setSteps((0, recipe_1.parseRecipe)(args.text).ops.map(recipe_1.makeStep));
+                break;
+            case 'backup':
+                await this.commit((0, workspace_1.parseWorkspace)(args.text));
+                await this.refreshPreview();
+                break;
+            case 'settings': {
+                const next = (0, workspace_1.validateWorkspace)({ ...this.state, ...args.settings, version: 1, revision: this.state.revision, source: this.state.source, steps: this.state.steps, undo: this.state.undo, redo: this.state.redo, completed: this.state.completed, cache: this.state.cache });
+                await this.commit(next);
+                break;
+            }
+            case 'new':
+                await this.commit({ ...(0, workspace_1.emptyWorkspace)(), theme: this.state.theme, reduceMotion: this.state.reduceMotion, mode: this.state.mode });
+                await this.refreshPreview();
+                break;
+            case 'preview':
+                await this.refreshPreview();
+                break;
+            case 'run':
+                await this.runFull();
+                break;
+            default: throw Error('Unknown workspace command.');
+        }
+        return { ...this.overview(), busy: false };
+    }
+    finally {
+        this.busy = false;
+    } }
+}
+exports.AlembicEngine = AlembicEngine;

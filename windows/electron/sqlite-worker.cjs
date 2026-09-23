@@ -1,0 +1,2 @@
+const sqlite=require('./sqlite.cjs');
+process.parentPort.once('message',async({data})=>{try{const result=data.command==='list'?await sqlite.listTables(data.path,data.temporaryRoot):data.command==='import'?await sqlite.importTable(data.path,data.table,data.temporaryRoot):(()=>{throw Error('Unknown SQLite command.');})();process.parentPort.postMessage({value:result});}catch(e){process.parentPort.postMessage({error:e.message});}});

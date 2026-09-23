@@ -1,0 +1,59 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.aggressive = exports.standard = void 0;
+exports.decodeEntities = decodeEntities;
+exports.stripTags = stripTags;
+exports.normalize = normalize;
+exports.decodeBytes = decodeBytes;
+const html_entities_json_1 = __importDefault(require("../content/html-entities.json"));
+exports.standard = { unicodeForm: 'nfc', trimWhitespace: true, collapseInnerWhitespace: false, stripControlCharacters: true, stripZeroWidth: true, canonicalizeQuotes: false, canonicalizeDashes: false, decodeHTMLEntities: false, stripHTMLTags: false, collapseRepeatedPunctuation: false, normalizeNewlines: true, lowercase: false };
+exports.aggressive = { ...exports.standard, unicodeForm: 'nfkc', collapseInnerWhitespace: true, canonicalizeQuotes: true, canonicalizeDashes: true, decodeHTMLEntities: true, stripHTMLTags: true, collapseRepeatedPunctuation: true };
+function decodeEntities(s) { return s.replace(/&(#x[0-9a-f]{1,8}|#\d{1,8}|[A-Za-z][A-Za-z0-9]{1,12});/gi, (raw, key) => { if (key[0] !== '#')
+    return html_entities_json_1.default[key] ?? raw; const n = key[1].toLowerCase() === 'x' ? parseInt(key.slice(2), 16) : Number(key.slice(1)); return n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : raw; }); }
+// Text extraction only. The result is always rendered as literal text, never HTML.
+function stripTags(s) { return s.replace(/<(script|style|head|noscript|svg)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, ' ').replace(/<!--[\s\S]*?(?:-->|$)/g, ' ').replace(/<\/?(?:p|div|br|li|ul|ol|h[1-6]|tr|table|section|article|blockquote|pre)\b[^>]*>/gi, '\n').replace(/<[^>]+>/g, '').replace(/[ \t]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\n{3,}/g, '\n\n').trim(); }
+function normalize(input, o = exports.standard) { let s = input; if (o.stripHTMLTags)
+    s = stripTags(s); if (o.decodeHTMLEntities)
+    s = decodeEntities(s); if (o.unicodeForm !== 'none')
+    s = s.normalize(o.unicodeForm === 'nfc' ? 'NFC' : 'NFKC'); if (o.stripZeroWidth)
+    s = s.replace(/[\u200b\u200c\u200d\u2060\ufeff\u00ad\u180e]/g, ''); if (o.stripControlCharacters)
+    s = s.replace(/[\p{Cc}]/gu, c => '\r\n\t'.includes(c) ? c : ''); if (o.normalizeNewlines)
+    s = s.replace(/\r\n?/g, '\n'); if (o.canonicalizeQuotes)
+    s = s.replace(/[‘’‚‛‹›`´]/g, "'").replace(/[“”„‟«»]/g, '"'); if (o.canonicalizeDashes)
+    s = s.replace(/[—–‒―−]/g, '-'); if (o.collapseRepeatedPunctuation)
+    s = s.replace(/\.{4,}/g, '...').replace(/([!?,;:])\1+/g, '$1'); if (o.collapseInnerWhitespace)
+    s = s.replace(/[ \t\u00a0]+/g, ' ').replace(/\n{3,}/g, '\n\n'); if (o.trimWhitespace)
+    s = s.trim(); if (o.lowercase)
+    s = s.toLowerCase(); return s; }
+function decodeBytes(bytes) {
+    const decode = (enc, data = bytes) => new TextDecoder(enc, { fatal: true, ignoreBOM: true }).decode(data);
+    if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf)
+        return { text: decode('utf-8', bytes.subarray(3)), encoding: 'UTF-8 with BOM' };
+    if (bytes[0] === 0xff && bytes[1] === 0xfe)
+        return { text: decode('utf-16le', bytes.subarray(2)), encoding: 'UTF-16 LE with BOM' };
+    if (bytes[0] === 0xfe && bytes[1] === 0xff)
+        return { text: decode('utf-16be', bytes.subarray(2)), encoding: 'UTF-16 BE with BOM' };
+    const len = Math.min(512, bytes.length);
+    if (len >= 8) {
+        let even = 0, odd = 0;
+        for (let i = 0; i < len; i++)
+            if (bytes[i] === 0) {
+                if (i % 2)
+                    odd++;
+                else
+                    even++;
+            }
+        const enc = odd / Math.floor(len / 2) > 0.7 ? 'utf-16le' : even / Math.ceil(len / 2) > 0.7 ? 'utf-16be' : '';
+        if (enc)
+            return { text: decode(enc), encoding: enc, warning: 'BOM-less UTF-16 inferred from NUL-byte positions; review imported text.' };
+    }
+    try {
+        return { text: decode('utf-8'), encoding: 'UTF-8' };
+    }
+    catch {
+        return { text: new TextDecoder('windows-1252').decode(bytes), encoding: 'Windows-1252 (fallback)', warning: 'Input is not valid UTF-8. Windows-1252 was used; review the preview before running.' };
+    }
+}
