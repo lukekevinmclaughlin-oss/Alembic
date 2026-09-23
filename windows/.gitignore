@@ -6,3 +6,4 @@ build/icon.ico
 build/uninstall-files.nsh
 public/icon.png
 public/cl100k_base.tiktoken
+build/uninstall-checks.nsh
