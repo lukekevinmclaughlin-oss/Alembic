@@ -47,14 +47,30 @@ Section "Install"
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair" 1
 SectionEnd
+Function un.RemoveInstalledFiles
+  StrCpy $0 10
+  remove_files:
+  !include "uninstall-files.nsh"
+  !include "uninstall-checks.nsh"
+  Return
+  retry_files:
+  IntOp $0 $0 - 1
+  IntCmp $0 0 failed_files
+  Sleep 1000
+  Goto remove_files
+  failed_files:
+  MessageBox MB_OK|MB_ICONEXCLAMATION "Alembic files are still in use. Close Alembic and run this uninstaller again. Your settings and unrelated files are preserved." /SD IDOK
+  SetErrorLevel 2
+  Abort
+FunctionEnd
 Section "Uninstall"
   SetShellVarContext current
+  Call un.RemoveInstalledFiles
   Delete "$DESKTOP\Alembic.lnk"
   Delete "$SMPROGRAMS\Alembic\Alembic.lnk"
   RMDir "$SMPROGRAMS\Alembic"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"
   DeleteRegKey HKCU "Software\Luke McLaughlin\Alembic"
-  !include "uninstall-files.nsh"
   Delete "$INSTDIR\Uninstall Alembic.exe"
   RMDir "$INSTDIR"
 SectionEnd
